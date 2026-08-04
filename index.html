@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scanner Kehadiran Praktikum</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <style>
+    body { background-color: #f1f3f5; padding-top: 50px; padding-bottom: 50px; }
+    .scanner-box { border: 2px dashed #0d6efd; border-radius: 12px; overflow: hidden; background: #000; }
+    .card-auth { max-width: 400px; margin: 0 auto; border: none; }
+    .card-admin { border-left: 5px solid #ffc107; }
+    .status-hadir { color: #198754; font-weight: bold; }
+    .status-lambat { color: #dc3545; font-weight: bold; }
+  </style>
+</head>
+<body>
+
+<div class="container" style="max-width: 800px;">
+
+  <!-- ==================== HALAMAN LOGIN ASISTEN/ADMIN ==================== -->
+  <div id="section-login">
+    <div class="card shadow-lg card-auth rounded-3">
+      <div class="card-body p-4">
+        <h4 class="fw-bold text-center text-primary mb-3">LOGIN ASISTEN LAB</h4>
+        <p class="text-muted text-center small mb-4">Silakan masukkan akun asisten Anda untuk mengaktifkan alat pemindai.</p>
+        
+        <input type="hidden" id="web-app-url" value="https://script.google.com/macros/s/AKfycbwdQy9FCMtOpsuSi88TmjTYAwP4spinG5UFgYXKXy6E4l4GTlUIenRMfa3dzMbkmtlG/exec">
+
+        <div class="mb-3">
+          <label class="form-label small fw-bold">Email Asisten</label>
+          <input type="email" id="inp-email" class="form-control" placeholder="nama@univ.ac.id">
+        </div>
+        <div class="mb-4">
+          <label class="form-label small fw-bold">Password</label>
+          <input type="password" id="inp-pass" class="form-control" placeholder="••••••••">
+        </div>
+        
+        <button onclick="prosesLogin()" id="btn-login" class="btn btn-primary w-100 fw-bold py-2">Masuk Sistem</button>
+        <div id="alert-login" class="alert alert-danger text-center d-none mt-3 small"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== HALAMAN UTAMA SCANNER & KONTROL SESI ==================== -->
+  <div id="section-scanner" class="d-none">
+    
+    <!-- Profil Card -->
+    <div class="card shadow-sm mb-4 card-admin">
+      <div class="card-body py-3 d-flex justify-content-between align-items-center flex-wrap">
+        <div>
+          <span class="badge bg-success py-2 px-3">Active: <span id="txt-peran">Asisten</span></span>
+          <h4 class="fw-bold text-dark m-0 mt-2" id="txt-nama-admin">Nama Asisten</h4>
+        </div>
+        <button onclick="logout()" class="btn btn-outline-danger btn-sm fw-bold">Keluar</button>
+      </div>
+    </div>
+
+    <!-- KONTROL SESI AKTIF PRAKTIKUM -->
+    <div class="card shadow-sm mb-4">
+      <div class="card-header bg-dark text-white py-3">
+        <h6 class="m-0 fw-bold">Kontrol Sesi Aktif Praktikum</h6>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-5">
+            <label class="form-label fw-bold small">Mata Kuliah Berjalan</label>
+            <select id="opt-mk" class="form-select"></select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-bold small">Pertemuan Ke-</label>
+            <input type="number" id="inp-pertemuan" class="form-control" min="1" max="16">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label fw-bold small">Sesi Ke-</label>
+            <input type="number" id="inp-sesi" class="form-control" min="1" max="5">
+          </div>
+          <div class="col-md-2 d-flex align-items-end">
+            <button onclick="updateSesiBackend()" id="btn-update-sesi" class="btn btn-warning w-100 fw-bold">Update</button>
+          </div>
+        </div>
+        <div id="alert-sesi" class="alert alert-success d-none mt-3 py-2 text-center small fw-bold">✔ Sesi aktif praktikum berhasil diperbarui di Google Sheets!</div>
+      </div>
+    </div>
+
+    <!-- Alat Scan Kamera -->
+    <div class="card shadow-lg border-0 rounded-3 mb-4">
+      <div class="card-body p-4 text-center">
+        <p class="text-muted small">Arahkan kamera ke QR Code mahasiswa</p>
+
+        <div id="reader" class="scanner-box mx-auto" style="width: 100%; max-width: 350px; min-height: 250px;"></div>
+        
+        <div class="mt-3">
+          <button id="btn-camera" onclick="initScanner()" class="btn btn-primary fw-bold px-4">Aktifkan Kamera</button>
+        </div>
+
+        <div class="mt-4 p-3 bg-light rounded border text-start">
+          <h6 class="fw-bold text-secondary m-0">Log Hasil Terakhir:</h6>
+          <div id="log-status" class="text-muted mt-2 fw-bold">Kamera Belum Aktif</div>
+          <p id="log-detail" class="m-0 text-secondary small mt-1"></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- FITUR BARU: TABEL REKAP PRESENSI MAHASISWA PADA SESI BERJALAN -->
+    <div class="card shadow-sm border-0 rounded-3">
+      <div class="card-header bg-secondary text-white py-3 d-flex justify-content-between align-items-center">
+        <h6 class="m-0 fw-bold">Daftar Hadir Sesi Ini (<span id="txt-total-hadir-sesi">0</span> Mahasiswa)</h6>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive" style="max-height: 350px; overflow-y: auto;">
+          <table class="table table-striped table-hover m-0 align-middle" style="font-size: 0.88rem;">
+            <thead class="table-light sticky-top">
+              <tr>
+                <th style="width: 90px;">Waktu</th>
+                <th style="width: 120px;">NIM</th>
+                <th>Nama Mahasiswa</th>
+                <th style="width: 110px; text-center">Status</th>
+              </tr>
+            </thead>
+            <tbody id="table-rekap-admin-body">
+              <tr>
+                <td colspan="4" class="text-center py-4 text-muted">Belum ada mahasiswa yang melakukan presensi pada sesi ini.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+  let html5QrcodeScanner;
+  let loggedInEmail = "";
+
+  function prosesLogin() {
+    const email = document.getElementById('inp-email').value;
+    const pass = document.getElementById('inp-pass').value;
+    const webAppUrl = document.getElementById('web-app-url').value;
+    const btn = document.getElementById('btn-login');
+    const alertBox = document.getElementById('alert-login');
+
+    if (!email || !pass) {
+      alertBox.innerText = "Email dan password wajib diisi!";
+      alertBox.classList.remove('d-none');
+      return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = `<span class="spinner-border spinner-border-sm"></span> Memverifikasi...`;
+    alertBox.classList.add('d-none');
+
+    fetch(webAppUrl, {
+      method: "POST",
+      body: JSON.stringify({ action: "login", email: email, password: pass })
+    })
+    .then(res => res.json())
+    .then(data => {
+      btn.disabled = false;
+      btn.innerText = "Masuk Sistem";
+
+      if (data.success) {
+        loggedInEmail = email;
+        
+        document.getElementById('section-login').classList.add('d-none');
+        document.getElementById('section-scanner').classList.remove('d-none');
+        
+        document.getElementById('txt-nama-admin').innerText = data.nama;
+        document.getElementById('txt-peran').innerText = data.peran;
+
+        if(data.sesi) {
+          document.getElementById('inp-pertemuan').value = data.sesi.pertemuan || "";
+          document.getElementById('inp-sesi').value = data.sesi.sesi_ke || "";
+        }
+        
+        let selectMk = document.getElementById('opt-mk');
+        selectMk.innerHTML = "";
+        if(data.pilihan_mk) {
+          data.pilihan_mk.forEach(function(mk) {
+            let opt = document.createElement('option');
+            opt.value = mk.kode;
+            opt.text = mk.kode + " - " + mk.nama;
+            if(data.sesi && mk.kode === data.sesi.kode_mk) opt.selected = true;
+            selectMk.appendChild(opt);
+          });
+        }
+
+        // FITUR BARU: Tampilkan rekap data presensi awal
+        renderTabelAdmin(data.rekap_admin);
+
+      } else {
+        alertBox.innerText = data.message;
+        alertBox.classList.remove('d-none');
+      }
+    })
+    .catch(err => {
+      btn.disabled = false;
+      btn.innerText = "Masuk Sistem";
+      alertBox.innerText = "Gagal terhubung ke server. Pastikan URL Web App benar.";
+      alertBox.classList.remove('d-none');
+      console.error(err);
+    });
+  }
+
+  function updateSesiBackend() {
+    const webAppUrl = document.getElementById('web-app-url').value;
+    const mkSelected = document.getElementById('opt-mk').value;
+    const ptmInput = document.getElementById('inp-pertemuan').value;
+    const sesiInput = document.getElementById('inp-sesi').value;
+    const btn = document.getElementById('btn-update-sesi');
+    const alertBox = document.getElementById('alert-sesi');
+
+    if(!mkSelected || !ptmInput || !sesiInput) {
+      alert("Mata kuliah, pertemuan, dan sesi tidak boleh kosong!");
+      return;
+    }
+
+    btn.disabled = true;
+    btn.innerText = "...";
+
+    fetch(webAppUrl, {
+      method: "POST",
+      body: JSON.stringify({
+        action: "update_sesi",
+        kode_mk: mkSelected,
+        pertemuan: ptmInput,
+        sesi_ke: sesiInput
+      })
+    })
+    .then(response => response.json())
+    .then(res => {
+      btn.disabled = false;
+      btn.innerText = "Update";
+      
+      if(res.success) {
+        alertBox.classList.remove('d-none');
+        setTimeout(() => alertBox.classList.add('d-none'), 3000);
+        
+        // FITUR BARU: Update isi tabel rekap berdasarkan sesi baru yang dipilih
+        renderTabelAdmin(res.rekap_admin);
+      } else {
+        alert("Gagal memperbarui sesi: " + res.message);
+      }
+    })
+    .catch(err => {
+      btn.disabled = false;
+      btn.innerText = "Update";
+      alert("Terjadi kesalahan koneksi saat memperbarui sesi.");
+      console.error(err);
+    });
+  }
+
+  // FITUR BARU: FUNGSI RENDER TABEL DAFTAR HADIR ADMIN SECARA REAL-TIME
+  function renderTabelAdmin(listMhs) {
+    const tbody = document.getElementById('table-rekap-admin-body');
+    const counterText = document.getElementById('txt-total-hadir-sesi');
+    
+    tbody.innerHTML = "";
+    
+    if(!listMhs || listMhs.length === 0) {
+      counterText.innerText = "0";
+      tbody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-muted">Belum ada mahasiswa yang melakukan presensi pada sesi ini.</td></tr>`;
+      return;
+    }
+    
+    counterText.innerText = listMhs.length;
+    
+    // LOGIKA BARU: Mengelompokkan mahasiswa berdasarkan properti 'kelompok'
+    let kelompokMap = {};
+    listMhs.forEach(function(mhs) {
+      if (!kelompokMap[mhs.kelompok]) {
+        kelompokMap[mhs.kelompok] = [];
+      }
+      kelompokMap[mhs.kelompok].push(mhs);
+    });
+    
+    // Lakukan looping untuk menggambar header kelompok dan anggotanya
+    for (let namaKelompok in kelompokMap) {
+      // 1. Buat Baris Header Kelompok (Spanning 4 Kolom)
+      let trHeader = document.createElement('tr');
+      trHeader.className = "table-dark text-white fw-bold";
+      trHeader.innerHTML = `<td colspan="4" class="py-2 text-uppercase font-monospace" style="letter-spacing: 1px;">📁 ${namaKelompok} (${kelompokMap[namaKelompok].length} Mhs)</td>`;
+      tbody.appendChild(trHeader);
+      
+      // 2. Tampilkan baris mahasiswa yang masuk dalam kelompok tersebut
+      kelompokMap[namaKelompok].forEach(function(mhs) {
+        let classStatus = mhs.status === "Hadir" ? 'status-hadir' : 'status-lambat';
+        let trMhs = document.createElement('tr');
+        trMhs.innerHTML = `
+          <td class="text-muted fw-bold">${mhs.waktu}</td>
+          <td class="text-primary fw-bold">${mhs.nim}</td>
+          <td class="fw-semibold text-dark">${mhs.nama}</td>
+          <td><span class="${classStatus}">${mhs.status}</span></td>
+        `;
+        tbody.appendChild(trMhs);
+      });
+    }
+  }
+
+  function initScanner() {
+    document.getElementById('log-status').innerText = "Meminta izin kamera...";
+    document.getElementById('btn-camera').style.display = 'none';
+
+    html5QrcodeScanner = new Html5Qrcode("reader");
+    
+    const qrCodeSuccessCallback = (decodedText, decodedResult) => {
+      html5QrcodeScanner.pause(true);
+      
+      document.getElementById('log-status').innerHTML = `<span class="spinner-border spinner-border-sm text-primary"></span> Memproses NIM: ${decodedText}...`;
+      document.getElementById('log-detail').innerText = "";
+
+      const webAppUrl = document.getElementById('web-app-url').value;
+      
+      fetch(webAppUrl, {
+        method: "POST",
+        body: JSON.stringify({
+          action: "scan",
+          nim: decodedText,
+          emailAdmin: loggedInEmail
+        })
+      })
+      .then(res => res.json())
+      .then(response => {
+        if (response.success) {
+          document.getElementById('log-status').innerHTML = `<span class="text-success fw-bold">✔ BERHASIL MENCATAT</span>`;
+          document.getElementById('log-detail').innerHTML = `<strong>Nama:</strong> ${response.nama}<br><strong>NIM:</strong> ${decodedText}<br><strong>Status:</strong> <span class="badge bg-success">${response.status}</span>`;
+          
+          // FITUR BARU: Perbarui isi tabel rekap admin secara instan setelah scan berhasil
+          renderTabelAdmin(response.rekap_admin);
+        } else {
+          document.getElementById('log-status').innerHTML = `<span class="text-danger fw-bold">❌ GAGAL</span>`;
+          document.getElementById('log-detail').innerText = response.message;
+        }
+        
+        setTimeout(() => {
+          html5QrcodeScanner.resume();
+          document.getElementById('log-status').innerText = "Siap scan barcode berikutnya...";
+        }, 2500);
+      })
+      .catch(err => {
+        document.getElementById('log-status').innerHTML = `<span class="text-danger fw-bold">❌ ERROR JARINGAN</span>`;
+        setTimeout(() => html5QrcodeScanner.resume(), 3000);
+      });
+    };
+
+    const config = { fps: 10, qrbox: { width: 220, height: 220 } };
+
+    Html5Qrcode.getCameras().then(devices => {
+      if (devices && devices.length) {
+        let cameraId = devices[devices.length - 1].id;
+        html5QrcodeScanner.start(cameraId, config, qrCodeSuccessCallback);
+      } else {
+        html5QrcodeScanner.start({ facingMode: "environment" }, config, qrCodeSuccessCallback);
+      }
+    })
+    .catch(err => {
+      document.getElementById('log-status').innerText = "Gagal mengakses kamera: " + err;
+      document.getElementById('btn-camera').style.display = 'inline-block';
+    });
+  }
+
+  function logout() {
+    if(html5QrcodeScanner) {
+      html5QrcodeScanner.stop().catch(() => {});
+    }
+    location.reload();
+  }
+</script>
+</body>
+</html>
