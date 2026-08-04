@@ -106,7 +106,7 @@
     <!-- FITUR BARU: TABEL REKAP PRESENSI MAHASISWA PADA SESI BERJALAN -->
     <div class="card shadow-sm border-0 rounded-3">
       <div class="card-header bg-secondary text-white py-3 d-flex justify-content-between align-items-center">
-        <h6 class="m-0 fw-bold">Daftar Hadir Sesi Ini (<span id="txt-total-hadir-sesi">0</span> Mahasiswa)</h6>
+        <h6 class="m-0 fw-bold">Daftar Hadir Sesi Ini (<span id="txt-total-hadir-sesi">0</span> Siswa)</h6>
       </div>
       <div class="card-body p-0">
         <div class="table-responsive" style="max-height: 350px; overflow-y: auto;">
@@ -121,7 +121,7 @@
             </thead>
             <tbody id="table-rekap-admin-body">
               <tr>
-                <td colspan="4" class="text-center py-4 text-muted">Belum ada mahasiswa yang melakukan presensi pada sesi ini.</td>
+                <td colspan="4" class="text-center py-4 text-muted">Belum ada siswa yang melakukan presensi pada sesi ini.</td>
               </tr>
             </tbody>
           </table>
@@ -283,7 +283,7 @@
       // 1. Buat Baris Header Kelompok (Spanning 4 Kolom)
       let trHeader = document.createElement('tr');
       trHeader.className = "table-dark text-white fw-bold";
-      trHeader.innerHTML = `<td colspan="4" class="py-2 text-uppercase font-monospace" style="letter-spacing: 1px;">📁 ${namaKelompok} (${kelompokMap[namaKelompok].length} Mhs)</td>`;
+      trHeader.innerHTML = `<td colspan="4" class="py-2 text-uppercase font-monospace" style="letter-spacing: 1px;">📁 ${namaKelompok} (${kelompokMap[namaKelompok].length} Siswa)</td>`;
       tbody.appendChild(trHeader);
       
       // 2. Tampilkan baris mahasiswa yang masuk dalam kelompok tersebut
