@@ -87,7 +87,7 @@
     <!-- Alat Scan Kamera -->
     <div class="card shadow-lg border-0 rounded-3 mb-4">
       <div class="card-body p-4 text-center">
-        <p class="text-muted small">Arahkan kamera ke QR Code mahasiswa</p>
+        <p class="text-muted small">Arahkan kamera ke QR Code siswa</p>
 
         <div id="reader" class="scanner-box mx-auto" style="width: 100%; max-width: 350px; min-height: 250px;"></div>
         
@@ -263,7 +263,7 @@
     
     if(!listMhs || listMhs.length === 0) {
       counterText.innerText = "0";
-      tbody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-muted">Belum ada mahasiswa yang melakukan presensi pada sesi ini.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-muted">Belum ada siswa yang melakukan presensi pada sesi ini.</td></tr>`;
       return;
     }
     
