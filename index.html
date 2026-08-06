@@ -310,7 +310,7 @@
     const qrCodeSuccessCallback = (decodedText, decodedResult) => {
       html5QrcodeScanner.pause(true);
       
-      document.getElementById('log-status').innerHTML = `<span class="spinner-border spinner-border-sm text-primary"></span> Memproses NIM: ${decodedText}...`;
+      document.getElementById('log-status').innerHTML = `<span class="spinner-border spinner-border-sm text-primary"></span> Memproses NIS: ${decodedText}...`;
       document.getElementById('log-detail').innerText = "";
 
       const webAppUrl = document.getElementById('web-app-url').value;
@@ -327,7 +327,7 @@
       .then(response => {
         if (response.success) {
           document.getElementById('log-status').innerHTML = `<span class="text-success fw-bold">✔ BERHASIL MENCATAT</span>`;
-          document.getElementById('log-detail').innerHTML = `<strong>Nama:</strong> ${response.nama}<br><strong>NIM:</strong> ${decodedText}<br><strong>Status:</strong> <span class="badge bg-success">${response.status}</span>`;
+          document.getElementById('log-detail').innerHTML = `<strong>Nama:</strong> ${response.nama}<br><strong>NIS:</strong> ${decodedText}<br><strong>Status:</strong> <span class="badge bg-success">${response.status}</span>`;
           
           // FITUR BARU: Perbarui isi tabel rekap admin secara instan setelah scan berhasil
           renderTabelAdmin(response.rekap_admin);
