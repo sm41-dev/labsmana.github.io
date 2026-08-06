@@ -269,7 +269,7 @@
     
     counterText.innerText = listMhs.length;
     
-    // LOGIKA BARU: Mengelompokkan mahasiswa berdasarkan properti 'kelompok'
+    // LOGIKA BARU: Mengelompokkan siswa berdasarkan properti 'kelompok'
     let kelompokMap = {};
     listMhs.forEach(function(mhs) {
       if (!kelompokMap[mhs.kelompok]) {
@@ -286,13 +286,13 @@
       trHeader.innerHTML = `<td colspan="4" class="py-2 text-uppercase font-monospace" style="letter-spacing: 1px;">📁 ${namaKelompok} (${kelompokMap[namaKelompok].length} Siswa)</td>`;
       tbody.appendChild(trHeader);
       
-      // 2. Tampilkan baris mahasiswa yang masuk dalam kelompok tersebut
+      // 2. Tampilkan baris siswa yang masuk dalam kelompok tersebut
       kelompokMap[namaKelompok].forEach(function(mhs) {
         let classStatus = mhs.status === "Hadir" ? 'status-hadir' : 'status-lambat';
         let trMhs = document.createElement('tr');
         trMhs.innerHTML = `
           <td class="text-muted fw-bold">${mhs.waktu}</td>
-          <td class="text-primary fw-bold">${mhs.nim}</td>
+          <td class="text-primary fw-bold">${mhs.nis || mhs.nim}</td>
           <td class="fw-semibold text-dark">${mhs.nama}</td>
           <td><span class="${classStatus}">${mhs.status}</span></td>
         `;
@@ -310,6 +310,7 @@
     const qrCodeSuccessCallback = (decodedText, decodedResult) => {
       html5QrcodeScanner.pause(true);
       
+      // Perubahan label dan log pesan saat scan berlangsung dari NIM ke NIS
       document.getElementById('log-status').innerHTML = `<span class="spinner-border spinner-border-sm text-primary"></span> Memproses NIS: ${decodedText}...`;
       document.getElementById('log-detail').innerText = "";
 
@@ -319,7 +320,7 @@
         method: "POST",
         body: JSON.stringify({
           action: "scan",
-          nim: decodedText,
+          nis: decodedText, // Properti JSON dikirim sebagai 'nis'
           emailAdmin: loggedInEmail
         })
       })
@@ -327,9 +328,10 @@
       .then(response => {
         if (response.success) {
           document.getElementById('log-status').innerHTML = `<span class="text-success fw-bold">✔ BERHASIL MENCATAT</span>`;
+          // Tampilan detail log menggunakan label NIS
           document.getElementById('log-detail').innerHTML = `<strong>Nama:</strong> ${response.nama}<br><strong>NIS:</strong> ${decodedText}<br><strong>Status:</strong> <span class="badge bg-success">${response.status}</span>`;
           
-          // FITUR BARU: Perbarui isi tabel rekap admin secara instan setelah scan berhasil
+          // Perbarui isi tabel rekap admin secara instan setelah scan berhasil
           renderTabelAdmin(response.rekap_admin);
         } else {
           document.getElementById('log-status').innerHTML = `<span class="text-danger fw-bold">❌ GAGAL</span>`;
